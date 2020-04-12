@@ -8,13 +8,11 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 from tkinter import *
 from tkinter import ttk, filedialog
 from zipfile import ZipFile
-from shutil import rmtree
+import shutil
 
 
 def hex_to_rgb(hex):
-    hex = hex.lstrip('#')
-    hlen = len(hex)
-    return tuple(int(hex[i:i+hlen/3], 16) for i in range(0, hlen, hlen/3))
+    return tuple(int(hex.lstrip('#')[i:i+2], 16)/255. for i in (0, 2, 4))
 
 
 def make_uuid():
@@ -57,7 +55,7 @@ class PPTX2PRO():
 
         if slide.background.fill.fore_color.type == MSO_COLOR_TYPE.RGB:
             self.background_color = hex_to_rgb(
-                slide.background.fill.fore_color.rgb)
+                str(slide.background.fill.fore_color.rgb))
         else:
             self.background_color = (0, 0, 0)
 
@@ -95,7 +93,7 @@ class PPTX2PRO():
         if font.color.type == MSO_COLOR_TYPE.RGB:
             font_color = hex_to_rgb(font.color.rgb)
         else:
-            font_color = (255, 255, 255)
+            font_color = (1, 1, 1)
 
         self.font = {
             "bold": font.bold,  # boolean
@@ -115,7 +113,7 @@ class PPTX2PRO():
         return b64encode(slide.encode()).decode()
 
     def headers(self):
-        return f'''<RVPresentationDocument height="{self.height}" width="{self.width}" versionNumber="500" docType="0" creatorCode="1349676880" lastDateUsed="2015-08-08T22:38:35" usedCount="0" category="Speaker" resourcesDirectory="" backgroundColor="0 0 0 1" drawingBackgroundColor="0" notes="" artist="" author="" album="" CCLIDisplay="0" CCLIArtistCredits="" CCLISongTitle="" CCLIPublisher="" CCLICopyrightInfo="" CCLILicenseNumber="" chordChartPath="">
+        return f'''<RVPresentationDocument height="{self.height}" width="{self.width}" versionNumber="500" docType="0" creatorCode="1349676880" lastDateUsed="2015-08-08T22:38:35" usedCount="0" category="Speaker" resourcesDirectory="" backgroundColor="{self.background_color[0]} {self.background_color[1]} {self.background_color[2]} 1" drawingBackgroundColor="1" notes="" artist="" author="" album="" CCLIDisplay="0" CCLIArtistCredits="" CCLISongTitle="" CCLIPublisher="" CCLICopyrightInfo="" CCLILicenseNumber="" chordChartPath="">
 	<timeline timeOffSet="0" selectedMediaTrackIndex="0" unitOfMeasure="60" duration="0" loop="0">
 		<timeCues containerClass="NSMutableArray" />
 		<mediaTracks containerClass="NSMutableArray" />
@@ -127,7 +125,8 @@ class PPTX2PRO():
 			<slides containerClass="NSMutableArray">'''
 
     def slide_text(self, index, name, text):
-        return f'''<RVDisplaySlide backgroundColor="{self.background_color[0]} {self.background_color[1]} {self.background_color[2]} 1" enabled="1" highlightColor="0 0 0 0" hotKey="" label="{name}" notes="" slideType="1" sort_index="' + sIndex + '" UUID="{make_uuid()}" drawingBackgroundColor="0" chordChartPath="" serialization-array-index="{index}">
+        return f'''
+                    <RVDisplaySlide backgroundColor="{self.background_color[0]} {self.background_color[1]} {self.background_color[2]} 1" enabled="1" highlightColor="0 0 0 0" hotKey="" label="{name}" notes="" slideType="1" sort_index="' + sIndex + '" UUID="{make_uuid()}" drawingBackgroundColor="0" chordChartPath="" serialization-array-index="{index}">
 						<cues containerClass="NSMutableArray" />
 						<displayElements containerClass="NSMutableArray">
 							<RVTextElement displayDelay="0" displayName="" locked="0" persistent="0" typeID="0" fromTemplate="0" bezelRadius="0" drawingFill="0" drawingShadow="1" drawingStroke="0" fillColor="0 0 0 0" rotation="0" source="" adjustsHeightToFit="0" verticalAlignment="0" RTFData="{self.rtfdata_text(text)}" revealType="0" serialization-array-index="0">
@@ -147,7 +146,8 @@ class PPTX2PRO():
 					</RVDisplaySlide>'''
 
     def slide_image(self, index, filename):
-        return f'''<RVDisplaySlide backgroundColor="{self.background_color[0]} {self.background_color[1]} {self.background_color[2]} 1" highlightColor="" drawingBackgroundColor="0" enabled="1" hotKey="" label="" notes="" UUID="{make_uuid()}" chordChartPath="" serialization-array-index="{index}">
+        return f'''
+                    <RVDisplaySlide backgroundColor="{self.background_color[0]} {self.background_color[1]} {self.background_color[2]} 1" highlightColor="" drawingBackgroundColor="0" enabled="1" hotKey="" label="" notes="" UUID="{make_uuid()}" chordChartPath="" serialization-array-index="{index}">
                         <cues containerClass="NSMutableArray">
                             <RVMediaCue UUID="DF44057F-EF40-48D7-B13F-0E8D7BE8C852" displayName="{filename}" enabled="1" timeStamp="0" delayTime="0" behavior="1" alignment="4" serialization-array-index="0" elementClassName="RVImageElement">
                                 <element displayName="ImageSample1.jpg" displayDelay="0" locked="0" persistent="0" typeID="0" fromTemplate="0" bezelRadius="0" drawingFill="0" drawingShadow="0" drawingStroke="0" fillColor="1 1 1 1" rotation="0" source="{filename}" flippedHorizontally="0" flippedVertically="0" scaleBehavior="3" manufactureURL="" manufactureName="" format="">
@@ -182,19 +182,36 @@ class PPTX2PRO():
 	</arrangements>
 </RVPresentationDocument>'''
 
-    def convert(self, path_to_pptx, save_path):
+    def convert(self, text_mode, path_to_pptx, save_path):
         slides = Presentation(path_to_pptx).slides
         with open(os.path.join(save_path, get_filename(path_to_pptx) + ".pro5"), 'w', encoding="utf-8") as f:
             f.write(self.headers())
 
-            for i in range(len(slides)):
-                if len(slides[i].shapes) == 0:
+            if text_mode == True:
+                for i in range(len(slides)):
                     t = ""
-                else:
-                    t = slides[i].shapes[0].text
+                    if len(slides[i].shapes) > 0:
+                        t = slides[i].shapes[0].text
 
-                text = standardConversion(t.replace("\n", "\\\n"))
-                f.write(self.slide_text(index=i, name="", text=text))
+                    text = standardConversion(t.replace("\n", "\\\n"))
+                    f.write(self.slide_text(index=i, name="", text=text))
+
+            else:
+                media_path = os.path.join("temp", "media")
+                if not os.path.exists(media_path):
+                    os.makedirs(media_path)
+                for i in range(len(slides)):
+                    shapes = slides[i].shapes
+                    if len(shapes) > 0:
+                        for shape in shapes:
+                            if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                                image = shape.image
+                                image_file_name = f"{get_filename(path_to_pptx)}_{i+1}.{image.ext}"
+                                f.write(self.slide_image(
+                                    index=i, filename=image_file_name))
+                                with open(os.path.join(media_path, image_file_name), 'wb') as img_file:
+                                    img_file.write(image.blob)
+                                break
 
             f.write(self.closure())
 
@@ -255,11 +272,11 @@ class Application(Frame):
         self.text_mode_boolean = BooleanVar()
         self.text_mode_boolean.set(True)
         self.text_mode_radiobutton = Radiobutton(
-            self, text="Text Slides", variable=self.text_mode_boolean, value=True, command=self.print_value)
+            self, text="Text Slides", variable=self.text_mode_boolean, value=True, command=self.slide_mode_command)
         self.text_mode_radiobutton.grid(row=row, column=0, pady=(0, 50))
 
         self.image_mode_radiobutton = Radiobutton(
-            self, text="Image Slides", variable=self.text_mode_boolean, value=False, command=self.print_value)
+            self, text="Image Slides", variable=self.text_mode_boolean, value=False, command=self.slide_mode_command)
         self.image_mode_radiobutton.grid(row=row, column=1, pady=(0, 50))
         row += 1
 
@@ -274,6 +291,9 @@ class Application(Frame):
         self.proBundle_checkbutton = Checkbutton(
             self, text='.proBundle', font=("arial", 12), variable=self.proBundle_boolean, onvalue=True, offvalue=False)
         self.proBundle_checkbutton.grid(row=row, column=1, pady=(0, 50))
+
+        self.checkbutton_row = row
+
         row += 1
 
         self.convert_button = Button(
@@ -292,8 +312,16 @@ class Application(Frame):
         self.footer_label.grid(row=row, column=0, columnspan=2, pady=(0, 50))
         row += 1
 
-    def print_value(self):
-        print(self.text_mode_boolean.get())
+    def slide_mode_command(self):
+        if self.text_mode_boolean.get() == True:
+            self.pro5_checkbutton.grid(
+                row=self.checkbutton_row, column=0, pady=(0, 50))
+            self.proBundle_checkbutton.grid(
+                row=self.checkbutton_row, column=1, pady=(0, 50))
+        else:
+            self.pro5_checkbutton.grid_forget()
+            self.proBundle_checkbutton.grid_forget()
+            self.footer_text.set("")
 
     def open_template(self):
         os.system("start " + "./data/Template.pptx")
@@ -338,17 +366,17 @@ class Application(Frame):
             self.footer_text.set("Choose files first!")
             self.footer_label.config(fg="red")
             return
-        elif self.pro5_boolean.get() == False and self.proBundle_boolean.get() == False:
+        elif self.pro5_boolean.get() == False and self.proBundle_boolean.get() == False and self.text_mode_boolean.get() == True:
             self.footer_text.set("Check at least one of .pro5 or .proBundle")
             self.footer_label.config(fg="red")
         else:
             self.footer_text.set("Converting...")
             self.footer_label.config(fg="black")
-            if self.proBundle_boolean.get() == True:
+            if self.proBundle_boolean.get() == True or self.text_mode_boolean.get() == False:
                 zip = ZipFile(os.path.join(
                     self.location, 'Slides.proBundle'), 'w')
 
-            if self.pro5_boolean.get() == True:
+            if self.pro5_boolean.get() == True and self.text_mode_boolean.get() == True:
                 save_path = self.location
             else:
                 temp_path = "./temp"
@@ -359,22 +387,25 @@ class Application(Frame):
             for i in range(len(self.files)):
                 pptx2pro = PPTX2PRO(
                     path_to_template_pptx="./data/Template.pptx")
-                pptx2pro.convert(
-                    path_to_pptx=self.files[i], save_path=save_path)
+                pptx2pro.convert(text_mode=self.text_mode_boolean.get(),
+                                 path_to_pptx=self.files[i], save_path=save_path)
                 self.progress["value"] = i + 1
                 self.progress.update()
-                if self.proBundle_boolean.get() == True:
-                    zip.write(os.path.join(save_path,
-                                           get_filename(self.files[i]) + ".pro5"))
+                if self.proBundle_boolean.get() == True or self.text_mode_boolean.get() == False:
+                    zip.write(os.path.join(save_path, get_filename(
+                        self.files[i]) + ".pro5"), os.path.join(get_filename(self.files[i]) + ".pro5"))
+            if self.text_mode_boolean.get() == False:
+                images = os.listdir(os.path.join("temp", "media"))
+                for image in images:
+                    zip.write(os.path.join(save_path, "media", image),
+                              os.path.join("media", image))
+
             self.footer_text.set("COMPLETE!")
             self.footer_label.config(fg="green")
 
-            if self.proBundle_boolean == True:
+            if self.proBundle_boolean.get() == True or self.text_mode_boolean.get() == False:
                 zip.close()
-
-            if self.pro5_boolean.get() == False:
-                rmtree(temp_path)
-            print(self.location)
+                shutil.rmtree(temp_path)
 
 
 root = Tk()
