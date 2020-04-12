@@ -4,6 +4,7 @@ from uuid import uuid4
 from base64 import b64encode
 from pptx import Presentation
 from pptx.enum.dml import MSO_COLOR_TYPE
+from pptx.enum.shapes import MSO_SHAPE_TYPE
 from tkinter import *
 from tkinter import ttk, filedialog
 from zipfile import ZipFile
@@ -125,25 +126,47 @@ class PPTX2PRO():
 		<RVSlideGrouping name="" uuid="3AFCBE29-AC33-496E-A181-E7C4B4618FCB" color="0 0 0 0" serialization-array-index="0">
 			<slides containerClass="NSMutableArray">'''
 
-    def slide(self, index, name, text):
-        return f'''<RVDisplaySlide backgroundColor="{self.background_color[0]} {self.background_color[1]} {self.background_color[2]} 1" enabled="1" highlightColor="0 0 0 0" hotKey="" label="{name}" notes="" slideType="1" sort_index="' + sIndex + '" UUID="{make_uuid()}" drawingBackgroundColor="0" chordChartPath="" serialization-array-index="{index}">\
-						<cues containerClass="NSMutableArray" />\
-						<displayElements containerClass="NSMutableArray">\
-							<RVTextElement displayDelay="0" displayName="" locked="0" persistent="0" typeID="0" fromTemplate="0" bezelRadius="0" drawingFill="0" drawingShadow="1" drawingStroke="0" fillColor="0 0 0 0" rotation="0" source="" adjustsHeightToFit="0" verticalAlignment="0" RTFData="{self.rtfdata_text(text)}" revealType="0" serialization-array-index="0">\
-								<_-RVRect3D-_position x="0" y="0" z="0" width="{self.width}" height="{self.height}" />\
-								<_-D-_serializedShadow containerClass="NSMutableDictionary">\
-									<NSMutableString serialization-native-value="{{5, -5}}" serialization-dictionary-key="shadowOffset" />\
-									<NSNumber serialization-native-value="0" serialization-dictionary-key="shadowBlurRadius" />\
-									<NSColor serialization-native-value="0 0 0 0.3333333432674408" serialization-dictionary-key="shadowColor" />\
-								</_-D-_serializedShadow>\
-								<stroke containerClass="NSMutableDictionary">\
-									<NSColor serialization-native-value="0 0 0 1" serialization-dictionary-key="RVShapeElementStrokeColorKey" />\
-									<NSNumber serialization-native-value="1" serialization-dictionary-key="RVShapeElementStrokeWidthKey" />\
-								</stroke>\
-							</RVTextElement>\
-						</displayElements>\
-						<_-RVProTransitionObject-_transitionObject transitionType="-1" transitionDuration="1" motionEnabled="0" motionDuration="20" motionSpeed="100" />\
+    def slide_text(self, index, name, text):
+        return f'''<RVDisplaySlide backgroundColor="{self.background_color[0]} {self.background_color[1]} {self.background_color[2]} 1" enabled="1" highlightColor="0 0 0 0" hotKey="" label="{name}" notes="" slideType="1" sort_index="' + sIndex + '" UUID="{make_uuid()}" drawingBackgroundColor="0" chordChartPath="" serialization-array-index="{index}">
+						<cues containerClass="NSMutableArray" />
+						<displayElements containerClass="NSMutableArray">
+							<RVTextElement displayDelay="0" displayName="" locked="0" persistent="0" typeID="0" fromTemplate="0" bezelRadius="0" drawingFill="0" drawingShadow="1" drawingStroke="0" fillColor="0 0 0 0" rotation="0" source="" adjustsHeightToFit="0" verticalAlignment="0" RTFData="{self.rtfdata_text(text)}" revealType="0" serialization-array-index="0">
+								<_-RVRect3D-_position x="0" y="0" z="0" width="{self.width}" height="{self.height}" />
+								<_-D-_serializedShadow containerClass="NSMutableDictionary">
+									<NSMutableString serialization-native-value="{{5, -5}}" serialization-dictionary-key="shadowOffset" />
+									<NSNumber serialization-native-value="0" serialization-dictionary-key="shadowBlurRadius" />
+									<NSColor serialization-native-value="0 0 0 0.3333333432674408" serialization-dictionary-key="shadowColor" />
+								</_-D-_serializedShadow>
+								<stroke containerClass="NSMutableDictionary">
+									<NSColor serialization-native-value="0 0 0 1" serialization-dictionary-key="RVShapeElementStrokeColorKey" />
+									<NSNumber serialization-native-value="1" serialization-dictionary-key="RVShapeElementStrokeWidthKey" />
+								</stroke>
+							</RVTextElement>
+						</displayElements>
+						<_-RVProTransitionObject-_transitionObject transitionType="-1" transitionDuration="1" motionEnabled="0" motionDuration="20" motionSpeed="100" />
 					</RVDisplaySlide>'''
+
+    def slide_image(self, index, filename):
+        return f'''<RVDisplaySlide backgroundColor="{self.background_color[0]} {self.background_color[1]} {self.background_color[2]} 1" highlightColor="" drawingBackgroundColor="0" enabled="1" hotKey="" label="" notes="" UUID="{make_uuid()}" chordChartPath="" serialization-array-index="{index}">
+                        <cues containerClass="NSMutableArray">
+                            <RVMediaCue UUID="DF44057F-EF40-48D7-B13F-0E8D7BE8C852" displayName="{filename}" enabled="1" timeStamp="0" delayTime="0" behavior="1" alignment="4" serialization-array-index="0" elementClassName="RVImageElement">
+                                <element displayName="ImageSample1.jpg" displayDelay="0" locked="0" persistent="0" typeID="0" fromTemplate="0" bezelRadius="0" drawingFill="0" drawingShadow="0" drawingStroke="0" fillColor="1 1 1 1" rotation="0" source="{filename}" flippedHorizontally="0" flippedVertically="0" scaleBehavior="3" manufactureURL="" manufactureName="" format="">
+                                    <_-RVRect3D-_position x="0" y="0" z="0" width="0" height="0" />
+                                    <_-D-_serializedShadow containerClass="NSMutableDictionary">
+                                        <NSNumber serialization-native-value="0" serialization-dictionary-key="shadowBlurRadius" />
+                                        <NSColor serialization-native-value="0 0 0 0" serialization-dictionary-key="shadowColor" />
+                                        <NSMutableString serialization-native-value="{{0, 0}}" serialization-dictionary-key="shadowOffset" />
+                                    </_-D-_serializedShadow>
+                                    <stroke containerClass="NSMutableDictionary">
+                                        <NSColor serialization-dictionary-key="RVShapeElementStrokeColorKey" serialization-native-value="0 0 0 1" />
+                                        <NSNumber serialization-dictionary-key="RVShapeElementStrokeWidthKey" serialization-native-value="1.0" />
+                                    </stroke>
+                                    <effects containerClass="NSMutableArray" />
+                                </element>
+                            </RVMediaCue>
+                        </cues>
+                        <displayElements containerClass="NSMutableArray" />
+                    </RVDisplaySlide>'''
 
     def closure(self):
         return '''
@@ -171,7 +194,7 @@ class PPTX2PRO():
                     t = slides[i].shapes[0].text
 
                 text = standardConversion(t.replace("\n", "\\\n"))
-                f.write(self.slide(index=i, name="", text=text))
+                f.write(self.slide_text(index=i, name="", text=text))
 
             f.write(self.closure())
 
@@ -229,6 +252,17 @@ class Application(Frame):
         self.files_label.grid(row=row, column=0, columnspan=2, pady=(0, 50))
         row += 1
 
+        self.text_mode_boolean = BooleanVar()
+        self.text_mode_boolean.set(True)
+        self.text_mode_radiobutton = Radiobutton(
+            self, text="Text Slides", variable=self.text_mode_boolean, value=True, command=self.print_value)
+        self.text_mode_radiobutton.grid(row=row, column=0, pady=(0, 50))
+
+        self.image_mode_radiobutton = Radiobutton(
+            self, text="Image Slides", variable=self.text_mode_boolean, value=False, command=self.print_value)
+        self.image_mode_radiobutton.grid(row=row, column=1, pady=(0, 50))
+        row += 1
+
         self.pro5_boolean = BooleanVar()
         self.pro5_boolean.set(True)
         self.pro5_checkbutton = Checkbutton(
@@ -257,6 +291,9 @@ class Application(Frame):
             self, textvariable=self.footer_text, font=("arial", 12))
         self.footer_label.grid(row=row, column=0, columnspan=2, pady=(0, 50))
         row += 1
+
+    def print_value(self):
+        print(self.text_mode_boolean.get())
 
     def open_template(self):
         os.system("start " + "./data/Template.pptx")
